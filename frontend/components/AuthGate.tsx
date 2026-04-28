@@ -1,64 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppLayout from "./AppLayout";
 import LoginScreen from "./LoginScreen";
+import AppLayout from "./AppLayout";
+import type { AppUser } from "../lib/api";
 
-type AuthGateProps = {
-  children: React.ReactNode;
-};
-
-export default function AuthGate({ children }: AuthGateProps) {
-  const [isReady, setIsReady] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+export default function AuthGate({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const savedAuth = localStorage.getItem("isLoggedIn");
+    const savedUser = localStorage.getItem("currentUser");
 
-    if (savedAuth === "true") {
-      setIsLoggedIn(true);
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem("currentUser");
+      }
     }
 
-    setIsReady(true);
+    setReady(true);
   }, []);
 
-  const handleLogin = () => {
-    if (login === "asoltan" && password === "1234") {
-      localStorage.setItem("isLoggedIn", "true");
-      setIsLoggedIn(true);
-      setLoginError("");
-    } else {
-      setLoginError("Неверный логин или пароль");
-    }
+  const handleLogin = (nextUser: AppUser) => {
+    localStorage.setItem("currentUser", JSON.stringify(nextUser));
+    setUser(nextUser);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    setIsLoggedIn(false);
-    setLogin("");
-    setPassword("");
-    setLoginError("");
+    localStorage.removeItem("currentUser");
+    setUser(null);
   };
 
-  if (!isReady) {
+  if (!ready) {
     return null;
   }
 
-  if (!isLoggedIn) {
-    return (
-      <LoginScreen
-        login={login}
-        password={password}
-        loginError={loginError}
-        setLogin={setLogin}
-        setPassword={setPassword}
-        onLogin={handleLogin}
-      />
-    );
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   return <AppLayout onLogout={handleLogout}>{children}</AppLayout>;

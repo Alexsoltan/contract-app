@@ -1,5 +1,6 @@
 export type Counterparty = {
   id: number;
+  company?: string;
   entity_type?: string;
   name: string;
   inn?: string;
@@ -16,6 +17,7 @@ export type Counterparty = {
 };
 
 export const emptyCounterpartyForm: Omit<Counterparty, "id"> = {
+  company: "",
   entity_type: "ООО",
   name: "",
   inn: "",

@@ -1,0 +1,16 @@
+{
+  "framework_contract": {
+    "id": "framework_contract",
+    "title": "Рамочный договор",
+    "description": "Типовой договор с контрагентом",
+    "active_version": "v1",
+    "versions": [
+      {
+        "version": "v1",
+        "filename": "framework_contract_v1_20260428021919.docx",
+        "original_filename": "ШАБЛОН __ Рамочный договор [ООО БРЕЛЕ].docx",
+        "uploaded_at": "2026-04-28T02:19:19.848028"
+      }
+    ]
+  }
+}

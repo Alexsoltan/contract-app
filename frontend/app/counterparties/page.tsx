@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 
 import CounterpartyForm from "../../components/CounterpartyForm";
 import ModalShell from "../../components/ModalShell";
@@ -12,6 +12,7 @@ import {
   updateCounterparty,
   deleteCounterparty,
   extractCounterpartyFromPdf,
+  downloadFrameworkContract,
 } from "../../lib/api";
 
 import { Counterparty, emptyCounterpartyForm } from "../../lib/types";
@@ -34,7 +35,9 @@ export default function CounterpartiesPage() {
 
   const [form, setForm] = useState(emptyCounterpartyForm);
 
-  const deletingCounterparty = counterparties.find((item) => item.id === deleteId);
+  const deletingCounterparty = counterparties.find(
+    (item) => item.id === deleteId
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -64,6 +67,7 @@ export default function CounterpartiesPage() {
 
   const handleSave = async () => {
     if (!selectedCounterparty) return;
+
     await updateCounterparty(selectedCounterparty.id, form);
     setSelectedCounterparty(null);
     loadData();
@@ -71,16 +75,17 @@ export default function CounterpartiesPage() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
+
     await deleteCounterparty(deleteId);
     setDeleteId(null);
     loadData();
   };
 
-  const openCard = (c: Counterparty) => {
-    setSelectedCounterparty(c);
+  const openCard = (counterparty: Counterparty) => {
+    setSelectedCounterparty(counterparty);
     setForm({
       ...emptyCounterpartyForm,
-      ...c,
+      ...counterparty,
     });
   };
 
@@ -97,61 +102,69 @@ export default function CounterpartiesPage() {
       });
 
       setIsCreateOpen(true);
-    } catch (e: any) {
-      setPdfError(e.message);
+    } catch (error: any) {
+      setPdfError(error.message);
     } finally {
       setIsPdfLoading(false);
       setIsDragOver(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) recognizePdf(file);
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (file) {
+      recognizePdf(file);
+    }
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-5xl font-semibold">Контрагенты</h1>
+    <div className="mx-auto max-w-[1200px]">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-4xl font-semibold sm:text-5xl">Контрагенты</h1>
 
         <button
           onClick={openCreateModal}
-          className="bg-black text-white px-6 py-3 rounded-full hover:bg-[#2a2a2a] transition"
+          className="w-full rounded-full bg-black px-6 py-3 text-white transition hover:bg-[#2a2a2a] sm:w-auto"
         >
           Добавить контрагента
         </button>
       </div>
 
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
+        onDragOver={(event) => {
+          event.preventDefault();
           setIsDragOver(true);
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
-        className={`mb-6 h-[96px] rounded-3xl border flex items-center justify-center text-center ${
+        className={
           isDragOver
-            ? "border-black border-2 bg-white"
-            : "border-dashed border-[#d8d8d2] bg-white/60"
-        }`}
+            ? "mb-5 flex min-h-[96px] items-center justify-center rounded-3xl border-2 border-black bg-white px-5 text-center sm:mb-6"
+            : "mb-5 flex min-h-[96px] items-center justify-center rounded-3xl border border-dashed border-[#d8d8d2] bg-white/60 px-5 text-center sm:mb-6"
+        }
       >
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf"
           className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) recognizePdf(file);
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+
+            if (file) {
+              recognizePdf(file);
+            }
           }}
         />
 
         <div>
-          <p>
+          <p className="text-sm text-neutral-600 sm:text-base">
             {isPdfLoading ? "Распознаём PDF..." : "Перетащите PDF или "}
+
             {!isPdfLoading && (
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -162,35 +175,51 @@ export default function CounterpartiesPage() {
             )}
           </p>
 
-          {pdfError && <p className="text-sm text-red-500 mt-2">{pdfError}</p>}
+          {pdfError && <p className="mt-2 text-sm text-red-500">{pdfError}</p>}
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl overflow-hidden">
+      <div className="overflow-hidden rounded-3xl bg-white">
         {loading && <p className="p-6 text-neutral-400">Загрузка...</p>}
 
         {!loading && counterparties.length === 0 && (
           <p className="p-6 text-neutral-400">Нет контрагентов</p>
         )}
 
-        {counterparties.map((c) => (
+        {counterparties.map((counterparty) => (
           <div
-            key={c.id}
-            onClick={() => openCard(c)}
-            className="group px-6 py-5 grid grid-cols-[1fr_220px_48px] items-center gap-4 hover:bg-[#fafafa] cursor-pointer transition"
+            key={counterparty.id}
+            onClick={() => openCard(counterparty)}
+            className="group grid cursor-pointer grid-cols-[1fr_44px] gap-3 border-b border-[#f0f0ed] px-5 py-5 transition last:border-b-0 hover:bg-[#fafafa] md:grid-cols-[180px_1fr_180px_48px] lg:grid-cols-[220px_1fr_220px_48px] lg:px-6"
           >
-            <div>
-              <p className="font-medium">{formatCounterpartyName(c)}</p>
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wide text-neutral-400 md:hidden">
+                Компания
+              </p>
+              <p className="truncate font-medium">
+                {counterparty.company || "—"}
+              </p>
             </div>
 
-            <p className="text-neutral-700">ИНН: {c.inn || "-"}</p>
+            <div className="min-w-0 md:col-start-2">
+              <p className="text-xs uppercase tracking-wide text-neutral-400 md:hidden">
+                Контрагент
+              </p>
+              <p className="truncate font-medium">
+                {formatCounterpartyName(counterparty)}
+              </p>
+            </div>
+
+            <p className="col-span-2 text-sm text-neutral-700 md:col-span-1">
+              ИНН: {counterparty.inn || "-"}
+            </p>
 
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteId(c.id);
+              onClick={(event) => {
+                event.stopPropagation();
+                setDeleteId(counterparty.id);
               }}
-              className="opacity-0 group-hover:opacity-100 transition flex items-center justify-center w-10 h-10 rounded-xl text-neutral-500 hover:bg-red-50 hover:text-red-600"
+              className="row-start-1 col-start-2 flex h-10 w-10 items-center justify-center rounded-xl text-neutral-500 opacity-100 transition hover:bg-red-50 hover:text-red-600 md:col-start-4 md:opacity-0 md:group-hover:opacity-100"
               title="Удалить"
             >
               <Trash2 size={18} />
@@ -201,25 +230,27 @@ export default function CounterpartiesPage() {
 
       {isCreateOpen && (
         <ModalShell>
-          <div className="px-8 pt-8 pb-6">
-            <h2 className="text-3xl font-semibold">Новый контрагент</h2>
+          <div className="px-5 pt-6 pb-5 sm:px-8 sm:pt-8 sm:pb-6">
+            <h2 className="text-2xl font-semibold sm:text-3xl">
+              Новый контрагент
+            </h2>
           </div>
 
-          <div className="px-8 pb-8">
+          <div className="px-5 pb-6 sm:px-8 sm:pb-8">
             <CounterpartyForm form={form} updateForm={updateForm} />
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#ededeb] px-8 py-5 flex gap-3 rounded-b-3xl">
+          <div className="sticky bottom-0 flex flex-col gap-3 rounded-b-3xl border-t border-[#ededeb] bg-white px-5 py-5 sm:flex-row sm:px-8">
             <button
               onClick={handleCreate}
-              className="flex-1 bg-black text-white py-4 rounded-2xl hover:bg-[#2a2a2a] transition"
+              className="flex-1 rounded-2xl bg-black py-4 text-white transition hover:bg-[#2a2a2a]"
             >
               Создать
             </button>
 
             <button
               onClick={() => setIsCreateOpen(false)}
-              className="flex-1 border border-[#deded8] py-4 rounded-2xl hover:bg-[#f3f3f1] transition"
+              className="flex-1 rounded-2xl border border-[#deded8] py-4 transition hover:bg-[#f3f3f1]"
             >
               Отмена
             </button>
@@ -229,46 +260,57 @@ export default function CounterpartiesPage() {
 
       {selectedCounterparty && (
         <ModalShell>
-          <div className="px-8 pt-8 pb-6">
-            <p className="text-sm text-neutral-400 mb-2">
-              Карточка контрагента #{selectedCounterparty.id}
-            </p>
-            <h2 className="text-3xl font-semibold">
-              {formatCounterpartyName(selectedCounterparty)}
+          <div className="px-5 pt-6 pb-5 sm:px-8 sm:pt-8 sm:pb-6">
+            <h2 className="text-2xl font-semibold sm:text-3xl">
+              {selectedCounterparty.company || "Без компании"}
             </h2>
+
+            <p className="mt-2 text-base text-neutral-500 sm:text-lg">
+              {formatCounterpartyName(selectedCounterparty)}
+            </p>
           </div>
 
-          <div className="px-8 pb-8">
+          <div className="px-5 pb-6 sm:px-8 sm:pb-8">
             <CounterpartyForm form={form} updateForm={updateForm} />
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#ededeb] px-8 py-5 flex gap-3 rounded-b-3xl">
+          <div className="sticky bottom-0 flex flex-col gap-3 rounded-b-3xl border-t border-[#ededeb] bg-white px-5 py-5 sm:px-8">
             <button
-              onClick={handleSave}
-              className="flex-1 bg-black text-white py-4 rounded-2xl hover:bg-[#2a2a2a] transition"
+              onClick={() => downloadFrameworkContract(selectedCounterparty.id)}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-[#deded8] bg-[#fafaf8] py-4 transition hover:bg-[#f3f3f1]"
             >
-              Сохранить
+              <FileText size={18} />
+              Сгенерировать договор
             </button>
 
-            <button
-              onClick={() => setSelectedCounterparty(null)}
-              className="flex-1 border border-[#deded8] py-4 rounded-2xl hover:bg-[#f3f3f1] transition"
-            >
-              Закрыть
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={handleSave}
+                className="flex-1 rounded-2xl bg-black py-4 text-white transition hover:bg-[#2a2a2a]"
+              >
+                Сохранить
+              </button>
+
+              <button
+                onClick={() => setSelectedCounterparty(null)}
+                className="flex-1 rounded-2xl border border-[#deded8] py-4 transition hover:bg-[#f3f3f1]"
+              >
+                Закрыть
+              </button>
+            </div>
           </div>
         </ModalShell>
       )}
 
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-3xl w-full max-w-[440px] shadow-2xl overflow-hidden">
-            <div className="px-8 pt-8 pb-6">
-              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-[440px] overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="px-6 pt-7 pb-6 sm:px-8 sm:pt-8">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
                 <Trash2 size={22} />
               </div>
 
-              <h2 className="text-2xl font-semibold mb-3">
+              <h2 className="mb-3 text-2xl font-semibold">
                 Удалить контрагента?
               </h2>
 
@@ -280,22 +322,22 @@ export default function CounterpartiesPage() {
                   : "Контрагент будет удалён из приложения."}
               </p>
 
-              <p className="text-neutral-400 text-sm mt-3">
+              <p className="mt-3 text-sm text-neutral-400">
                 Это действие нельзя отменить.
               </p>
             </div>
 
-            <div className="border-t border-[#ededeb] px-8 py-5 flex gap-3 bg-[#fafaf8]">
+            <div className="flex flex-col gap-3 border-t border-[#ededeb] bg-[#fafaf8] px-6 py-5 sm:flex-row sm:px-8">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 border border-[#deded8] bg-white py-4 rounded-2xl hover:bg-[#f3f3f1] transition"
+                className="flex-1 rounded-2xl border border-[#deded8] bg-white py-4 transition hover:bg-[#f3f3f1]"
               >
                 Отмена
               </button>
 
               <button
                 onClick={handleDelete}
-                className="flex-1 bg-red-600 text-white py-4 rounded-2xl hover:bg-red-700 transition"
+                className="flex-1 rounded-2xl bg-red-600 py-4 text-white transition hover:bg-red-700"
               >
                 Удалить
               </button>
