@@ -18,7 +18,7 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "BRÂLE Docs",
+  title: "Brele Документы",
   description: "Система управления документами",
 };
 
